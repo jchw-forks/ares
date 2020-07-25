@@ -90,6 +90,6 @@ guide:
 | Component              | Current name | Previous names             |
 |------------------------|--------------|----------------------------|
 | Whole project          | ares         | higan, bsnes               |
-| Advanced interface     | lucia        | higan                      |
-| Simple interface       | luna         | byuu                       |
+| Advanced interface     | luna         | higan                      |
+| Simple interface       | lucia        | byuu                       |
 | Game analyzer/importer | mia          | icarus, purify, snespurify |
