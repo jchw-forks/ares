@@ -1,0 +1,112 @@
+name: Build
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+jobs:
+  build_luna_ubuntu64:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install Dependencies
+      run: |
+        sudo add-apt-repository -y "deb http://archive.ubuntu.com/ubuntu `lsb_release -sc` main universe restricted multiverse"
+        sudo apt-get update -y -qq
+        sudo apt-get install libsdl2-dev libgtksourceview2.0-dev libgtk2.0-dev libao-dev libopenal-dev
+    - name: Make
+      run: make -C luna
+    - name: Upload
+      uses: actions/upload-artifact@v2
+      with:
+        name: ares-ubuntu64
+        path: luna/out/luna
+
+  build_lucia_ubuntu64:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install Dependencies
+      run: |
+        sudo add-apt-repository -y "deb http://archive.ubuntu.com/ubuntu `lsb_release -sc` main universe restricted multiverse"
+        sudo apt-get update -y -qq
+        sudo apt-get install libsdl2-dev libgtksourceview2.0-dev libgtk2.0-dev libao-dev libopenal-dev
+    - name: Make
+      run: make -C lucia
+    - name: Upload
+      uses: actions/upload-artifact@v2
+      with:
+        name: ares-ubuntu64
+        path: lucia/out/lucia
+
+  build_luna_win64:
+    runs-on: windows-2016
+    steps:
+    - uses: actions/checkout@v2
+    - name: Make
+      run: make -C luna
+    - name: Upload
+      uses: actions/upload-artifact@v2
+      with:
+        name: ares-win64
+        path: luna/out/luna.exe
+
+  build_lucia_win64:
+    runs-on: windows-2016
+    steps:
+    - uses: actions/checkout@v2
+    - name: Make
+      run: make -C lucia
+    - name: Upload
+      uses: actions/upload-artifact@v2
+      with:
+        name: ares-win64
+        path: lucia/out/lucia.exe
+
+  make_prerelease:
+    if: |
+      github.event.action != 'pull_request' &&
+      github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    needs:
+    - build_luna_ubuntu64
+    - build_lucia_ubuntu64
+    - build_luna_win64
+    - build_lucia_win64
+    steps:
+    - name: Create Nightly Release
+      id: create_release
+      uses: jchv/nightly-action@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: 'nightly'
+    - uses: actions/download-artifact@v2
+      id: download
+    - name: Zip Artifacts
+      run: |
+        for i in */
+        do
+          OUT="$PWD/$(basename $i).zip"
+          cd "$(dirname $i)"
+          zip -r "$OUT" "$(basename $i)"
+          cd -
+        done
+    - name: Upload Release Asset (Ubuntu)
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ares-ubuntu64.zip
+        asset_name: ares-ubuntu64.zip
+        asset_content_type: application/zip
+    - name: Upload Release Asset (Windows)
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ares-win64.zip
+        asset_name: ares-win64.zip
+        asset_content_type: application/zip
